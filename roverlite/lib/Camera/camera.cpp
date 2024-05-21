@@ -1,3 +1,4 @@
+#include <Arduino.h>
 #include "camera.h"
 
 bool Camera::initialize()
@@ -17,55 +18,71 @@ bool Camera::initialize()
     config.pin_pclk = PCLK_GPIO_NUM;
     config.pin_vsync = VSYNC_GPIO_NUM;
     config.pin_href = HREF_GPIO_NUM;
-    config.pin_sscb_sda = SIOD_GPIO_NUM;
-    config.pin_sscb_scl = SIOC_GPIO_NUM;
+    config.pin_sccb_sda = SIOD_GPIO_NUM;
+    config.pin_sccb_scl = SIOC_GPIO_NUM;
     config.pin_pwdn = PWDN_GPIO_NUM;
     config.pin_reset = RESET_GPIO_NUM;
     config.xclk_freq_hz = 20000000;
-    // config.frame_size = FRAMESIZE_QVGA;
+    config.frame_size = FRAMESIZE_UXGA;
     config.pixel_format = PIXFORMAT_JPEG; // for streaming
-    // config.grab_mode = CAMERA_GRAB_WHEN_EMPTY;
-    // config.fb_location = CAMERA_FB_IN_PSRAM;
-    config.jpeg_quality = 10;
+    // config.pixel_format = PIXFORMAT_RGB565; // for face detection/recognition
+    config.grab_mode = CAMERA_GRAB_WHEN_EMPTY;
+    config.fb_location = CAMERA_FB_IN_PSRAM;
+    config.jpeg_quality = 12;
     config.fb_count = 1;
 
-	if (psramFound())
-	{
-		config.jpeg_quality = 10;
-        config.frame_size = FRAMESIZE_VGA;
-		config.fb_count = 1;
-        // config.grab_mode = CAMERA_GRAB_LATEST;
-	}
-	else
-	{
-		config.frame_size = FRAMESIZE_SVGA;
-        config.fb_location = CAMERA_FB_IN_DRAM;
-	}
-
-    if (psramFound())
+    // if PSRAM IC present, init with UXGA resolution and higher JPEG quality
+    //                      for larger pre-allocated frame buffer.
+    if (config.pixel_format == PIXFORMAT_JPEG)
     {
-        heap_caps_malloc_extmem_enable(20000);  
-        Serial.printf("PSRAM initialized. malloc to take memory from psram above this size");    
-    } 
-
-	esp_err_t err = esp_camera_init(&config);
-	if (err != ESP_OK)
-	{
-		Serial.printf("Camera init failed with error 0x%x", err);
-		return false;
-	} else {
-        Serial.printf("Camera init succeeded!");
-        return true;
+        if (psramFound())
+        {
+            config.jpeg_quality = 10;
+            config.fb_count = 2;
+            config.grab_mode = CAMERA_GRAB_LATEST;
+        }
+        else
+        {
+            // Limit the frame size when PSRAM is not available
+            config.frame_size = FRAMESIZE_SVGA;
+            config.fb_location = CAMERA_FB_IN_DRAM;
+        }
+    }
+    else
+    {
+        // Best option for face detection/recognition
+        config.frame_size = FRAMESIZE_240X240;
     }
 
+    // camera init
+    esp_err_t err = esp_camera_init(&config);
+    if (err != ESP_OK)
+    {
+        Serial.printf("Camera init failed with error 0x%x", err);
+        return false;
+    }
+
+    sensor_t *s = esp_camera_sensor_get();
+    // initial sensors are flipped vertically and colors are a bit saturated
+    if (s->id.PID == OV3660_PID)
+    {
+        s->set_vflip(s, 1);       // flip it back
+        s->set_brightness(s, 1);  // up the brightness just a bit
+        s->set_saturation(s, -2); // lower the saturation
+    }
+    // drop down frame size for higher initial frame rate
+    if (config.pixel_format == PIXFORMAT_JPEG)
+    {
+        s->set_framesize(s, FRAMESIZE_QVGA);
+    }
 }
 
 void Camera::camera_fb_return(camera_fb_t *fb)
 {
-    esp_camera_fb_return(fb); 
+    esp_camera_fb_return(fb);
 }
 
-camera_fb_t* Camera::camera_fb_get()
+camera_fb_t *Camera::camera_fb_get()
 {
     return esp_camera_fb_get();
 }

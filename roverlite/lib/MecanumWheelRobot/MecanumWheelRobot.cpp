@@ -27,9 +27,11 @@ void MecanumWheelRobot::parseCommand(int8_t L_X, int8_t L_Y, int8_t R_X) {
 
 void MecanumWheelRobot::KinematicCal(float vel_X, float vel_Y, float omega_Z) {
     omega1 = (vel_X + vel_Y - omega_Z * (L1 + L2))/R;
-    omega2 = (vel_X - vel_Y + omega_Z * (L1 + L2))/R;
-    omega3 = (vel_X - vel_Y - omega_Z * (L1 + L2))/R;
+    omega2 = (-vel_X + vel_Y + omega_Z * (L1 + L2))/R;
+    omega3 = (-vel_X + vel_Y - omega_Z * (L1 + L2))/R;
     omega4 = (vel_X + vel_Y + omega_Z * (L1 + L2))/R;
+    // Serial.printf("omega_Z: %f vel_X: %f vel_Y: %f omega1: %f omega2: %f omega3: %f omega4: %f\n\n", omega_Z, vel_X, vel_Y,omega1, omega2, omega3, omega4);
+
     // Serial.printf("omega1: %f omega2: %f omega3: %f omega4: %f\n", omega1, omega2, omega3, omega4);
 }
 

@@ -3,7 +3,7 @@
 
 #include "esp_camera.h"
 #include <Arduino.h>
-#include <PinDefines.h>
+#include "PinDefines.h"
 
 class Camera {
 public:
@@ -13,7 +13,6 @@ public:
     bool initialize();
     void camera_fb_return(camera_fb_t *fb);
     camera_fb_t* camera_fb_get();
-
 };
 
 #endif
