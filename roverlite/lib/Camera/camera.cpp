@@ -1,8 +1,8 @@
-#include <Arduino.h>
 #include "camera.h"
 
-bool Camera::initialize()
+void Camera::initialize()
 {
+
     camera_config_t config;
     config.ledc_channel = LEDC_CHANNEL_0;
     config.ledc_timer = LEDC_TIMER_0;
@@ -59,7 +59,7 @@ bool Camera::initialize()
     if (err != ESP_OK)
     {
         Serial.printf("Camera init failed with error 0x%x", err);
-        return false;
+        return;
     }
 
     sensor_t *s = esp_camera_sensor_get();

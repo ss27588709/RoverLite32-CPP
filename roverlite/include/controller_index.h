@@ -1,4 +1,238 @@
 //File: controller_index.html.gz, Size: 2828
+char* indexHtml PROGMEM = R"rawliteral(
+    <!doctype html>
+    <html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+
+
+
+    <meta charset="UTF-8">
+    <title>RoverLite</title>
+</head>
+
+<body><div style="text-align: center;"><h1>RoverLite</h1></div><br>
+
+<style>
+    #container {
+        width: 100%;
+        height: 49vh;
+        background-color: #333;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        border-radius: 7px;
+        touch-action: none;
+    }
+
+    #item {
+        width: 100px;
+        height: 100px;
+        background-color: rgb(245, 230, 99);
+        border: 10px solid rgba(136, 136, 136, .5);
+        border-radius: 50%;
+        touch-action: none;
+        user-select: none;
+    }
+
+    #item:active {
+        background-color: rgba(168, 218, 220, 1.00);
+    }
+
+    #item:hover {
+        cursor: pointer;
+        border-width: 20px;
+    }
+
+    #area {
+        position: fixed;
+        right: 0;
+        top: 0;
+    }
+</style>
+
+<style>
+    *
+    {
+        box-sizing: border-box;
+    }
+    body
+    {
+        margin: 0px;
+        padding: 0px;
+        font-family: monospace;
+    }
+    .row
+    {
+        display: inline-flex;
+        clear: both;
+    }
+    .columnLateral
+    {
+      float: left;
+      width: 15%;
+      min-width: 300px;
+    }
+    .columnCetral
+    {
+      float: left;
+      width: 70%;
+      min-width: 300px;
+    }
+    #joy2Div
+    {
+        width:200px;
+        height:200px;
+        margin:50px
+    }
+
+</style>
+
+<style>
+.button {
+    color: rgb(13, 240, 13);
+    text-align: center;
+    padding: 2px;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 15px;
+    margin: 1px 2px;
+    cursor: pointer;
+    border-radius: 10px;
+    width: 78px;
+    height: 55px;
+}
+.red {background-color: #F00;}
+.green {background-color: #090;}
+.yellow {background-color:#F90;}
+.blue {background-color:#03C;}
+</style>
+
+<style>
+.battery {
+	width: 60px;
+	height: 30px;
+	color: midnightblue;
+	border: 3px solid currentColor;
+	border-radius: 2px;
+	font-size: 20px;
+	position: relative;
+	background-image: linear-gradient(to right, rgb(47, 248, 29), rgb(47, 248, 29));
+	background-repeat: no-repeat;
+	background-size: 90% 80%;
+	background-position: top 3px left 3px;
+}
+
+.battery::after {
+	content: '';
+	position: absolute;
+	width: 5px;
+	height: 20px;
+	background-color: currentColor;
+	top: 2px;
+	right: -8px;
+	border-radius: 0 2px 2px 0;
+}
+</style>
+
+
+<center><table width="100" height="50" border="0" align="center">
+    <tbody><tr>
+        <td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+        <td><div class="battery" id="battery"></div></td>
+    </tr></tbody></table>
+
+<center><img id="cameraImage" src="http://192.168.50.86:89/stream" style="width:400px;height:250px;"></center><br>
+
+<center><div class="row">
+    <div id="joyDivLeft" style="width:200px;height:200px;margin:auto;"><canvas id="joystick" width="200" height="200"></canvas></div>
+    <div><button id="LEDBUTTON" type="button" onclick="buttonclick(this);" style="width:85px; height: 40px; background-color:#999; Text-align: center;">LAMP OFF</button></div>
+    <div id="joyDivRight" style="width:200px;height:200px;margin:auto;"><canvas id="joystick" width="200" height="200"></canvas></div>
+</div></center>
+
+
+
+<script type="text/javascript">
+    var JoyStick = function (t, e) { var i = void 0 === (e = e || {}).title ? "joystick" : e.title, n = void 0 === e.width ? 0 : e.width, o = void 0 === e.height ? 0 : e.height, h = void 0 === e.internalFillColor ? "#00AA00" : e.internalFillColor, r = void 0 === e.internalLineWidth ? 2 : e.internalLineWidth, d = void 0 === e.internalStrokeColor ? "#003300" : e.internalStrokeColor, a = void 0 === e.externalLineWidth ? 2 : e.externalLineWidth, l = void 0 === e.externalStrokeColor ? "#008000" : e.externalStrokeColor, c = document.getElementById(t), u = document.createElement("canvas"); u.id = i, 0 == n && (n = c.clientWidth), 0 == o && (o = c.clientHeight), u.width = n, u.height = o, c.appendChild(u); var s = u.getContext("2d"), f = 0, v = 2 * Math.PI, g = (u.width - 110) / 2, w = g + 5, C = g + 30, m = u.width / 2, p = u.height / 2, L = u.width / 10, E = -1 * L, S = u.height / 10, k = -1 * S, W = m, G = p; function x() { s.beginPath(), s.arc(m, p, C, 0, v, !1), s.lineWidth = a, s.strokeStyle = l, s.stroke() } function y() { s.beginPath(), W < g && (W = w), W + g > u.width && (W = u.width - w), G < g && (G = w), G + g > u.height && (G = u.height - w), s.arc(W, G, g, 0, v, !1); var t = s.createRadialGradient(m, p, 5, m, p, 200); t.addColorStop(0, h), t.addColorStop(1, d), s.fillStyle = t, s.fill(), s.lineWidth = r, s.strokeStyle = d, s.stroke() } "ontouchstart" in document.documentElement ? (u.addEventListener("touchstart", function (t) { f = 1 }, !1), u.addEventListener("touchmove", function (t) { t.preventDefault(), 1 == f && (W = t.touches[0].pageX, G = t.touches[0].pageY, W -= u.offsetLeft, G -= u.offsetTop, s.clearRect(0, 0, u.width, u.height), x(), y()) }, !1), u.addEventListener("touchend", function (t) { f = 0, W = m, G = p, s.clearRect(0, 0, u.width, u.height), x(), y() }, !1)) : (u.addEventListener("mousedown", function (t) { f = 1 }, !1), u.addEventListener("mousemove", function (t) { 1 == f && (W = t.pageX, G = t.pageY, W -= u.offsetLeft, G -= u.offsetTop, s.clearRect(0, 0, u.width, u.height), x(), y()) }, !1), u.addEventListener("mouseup", function (t) { f = 0, W = m, G = p, s.clearRect(0, 0, u.width, u.height), x(), y() }, !1)), x(), y(), this.GetWidth = function () { return u.width }, this.GetHeight = function () { return u.height }, this.GetPosX = function () { return W }, this.GetPosY = function () { return G }, this.GetX = function () { return Math.round((W - m) / w * 100) }, this.GetY = function () { return Math.round((G - p) / w * 100 * -1) }, this.GetDir = function () { var t = "", e = W - m, i = G - p; return i >= k && i <= S && (t = "C"), i < k && (t = "N"), i > S && (t = "S"), e < E && ("C" == t ? t = "W" : t += "W"), e > L && ("C" == t ? t = "E" : t += "E"), t } };
+</script>
+
+<script language="javascript">
+    function buttonclick(e) {
+        var button = document.getElementById('LEDBUTTON');
+        if (button.textContent === 'LAMP OFF') {
+            button.textContent = 'LAMP ON';
+            button.style.backgroundColor = '#F00';
+            websocketCarInput.send(JSON.stringify({Lamp_SW: 1}));
+        }
+        else if (button.textContent === 'LAMP ON') {
+            button.textContent = 'LAMP OFF';
+            button.style.backgroundColor = "#999";
+            websocketCarInput.send(JSON.stringify({Lamp_SW: 0}));
+        }
+        else {
+            console.log('unknown textContent');
+        }
+    }
+</script>
+
+<script type="text/javascript">
+    // Create JoyStick object into DIVs
+    var joyLeft = new JoyStick('joyDivLeft');
+    var joyRight = new JoyStick('joyDivRight');
+
+    var webSocketCameraUrl = "ws:\/\/" + window.location.hostname + "/stream";
+    var webSocketCarInputUrl = "ws:\/\/" + window.location.hostname + "/cmd";      
+    var websocketCamera;
+    var websocketCarInput;
+      
+    function initCameraWebSocket() 
+    {
+        websocketCamera = new WebSocket(webSocketCameraUrl);
+        websocketCamera.binaryType = 'blob';
+        websocketCamera.onopen    = function(event){};
+        websocketCamera.onclose   = function(event){setTimeout(initCameraWebSocket, 2000);};
+        websocketCamera.onmessage = function(event)
+        {
+            var imageId = document.getElementById("cameraImage");
+            imageId.src = URL.createObjectURL(event.data);
+        };
+    }
+      
+    function initCarInputWebSocket()
+    {
+        websocketCarInput = new WebSocket(webSocketCarInputUrl);
+        websocketCarInput.onopen    = function(event)
+        {
+        };
+        websocketCarInput.onclose   = function(event){setTimeout(initCarInputWebSocket, 2000);};
+        websocketCarInput.onmessage = function(event){
+            let data = JSON.parse(event.data);
+            let batPercentage = data.percentage;
+            document.getElementById("battery").style.backgroundSize = '${batPercentage}% 80%';
+            console.log('battery monitor: ${batPercentage}%');
+        };
+    }
+      
+    function initWebSocket() 
+    {
+        initCameraWebSocket ();
+        initCarInputWebSocket();
+    }
+
+    window.onload = initWebSocket; 
+    //document.getElementById("mainTable").addEventListener("touchend", function(event){event.preventDefault();});
+    
+    setInterval(function() {var params={'L_XPos': joyLeft.GetX(), 'L_YPos': joyLeft.GetY(), 'R_XPos': joyRight.GetX()};  websocketCarInput.send(JSON.stringify(params));}, 100);
+
+</script>
+
+
+
+
+
+</center></body></html>
+)rawliteral";
+
+
 #define controller_index_html_gz_len 2828
 const uint8_t controller_index_html_gz[] PROGMEM = {  
 0x1F, 0x8B, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0xCD, 0x1A, 0x6B, 0x73, 0xDB, 0x36, 

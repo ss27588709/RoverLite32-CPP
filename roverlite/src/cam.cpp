@@ -29,7 +29,7 @@ uint32_t streamClientId = 0;
 uint8_t lampState = 0;
 uint8_t lastPercentage = 100;
 uint8_t batPercentage = 100;
-const TickType_t xDelay1ms = pdMS_TO_TICKS(1);
+const TickType_t xDelay1ms = pdMS_TO_TICKS(10);
 
 // // OV2640 Camera
 Camera ov2640;
@@ -52,7 +52,7 @@ void onStreamWebSocketEvent(AsyncWebSocket *server, AsyncWebSocketClient *client
 void batteryMonitorLoop();
 void sendCameraImage();
 void streamTask(void *parameter);
-// void startCameraServer();
+void startCameraServer();
 
 void setup()
 {
@@ -67,16 +67,8 @@ void setup()
     Serial.println("Connecting to WiFi...");
   }
 
+  ov2640.initialize();
 
-  
-
-  float isCameraInitialized = ov2640.initialize();
-  if (!isCameraInitialized)
-  {
-    while (1)
-    {
-    }
-  }
   pinMode(BJT_LAMP, OUTPUT);
   digitalWrite(BJT_LAMP, LOW);
 
@@ -102,6 +94,8 @@ void setup()
   // ov2640.startCameraServer();
   Serial.print("Camera Ready! AP IP address: ");
   Serial.println(WiFi.localIP());
+
+  // startCameraServer();
 
   server.on("/", HTTP_GET, handleRoot);
   server.onNotFound(handleNotFound);
@@ -143,10 +137,8 @@ void sendCameraImage()
   else
   {
   }
-  Serial.println("Frame buffer is acqured");
   wsCameraStream.binary(streamClientId, fb->buf, fb->len);
   esp_camera_fb_return(fb); // ov2640.camera_fb_return(fb);
-  Serial.println("Frame empty!");
 
   while (true)
   {
@@ -163,9 +155,11 @@ void handleRoot(AsyncWebServerRequest *request)
 {
   // request->send_P(200, "text/html", (const char*)controller_index_html_gz);
   // Serial.println("handle root!");
-  AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", controller_index_html_gz, controller_index_html_gz_len);
-  response->addHeader("Content-Encoding", "gzip");
-  request->send(response);
+  // AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", controller_index_html_gz, controller_index_html_gz_len);
+  // response->addHeader("Content-Encoding", "gzip");
+  // request->send(response);
+  request->send_P(200,"text/html",indexHtml);   //响应请求
+
 }
 
 void handleNotFound(AsyncWebServerRequest *request)

@@ -58,10 +58,7 @@ void streamTask(void *parameter);
 void startCameraServer();
 void setupLedFlash(int pin);
 
-void setup() {
-  Serial.begin(115200);
-  Serial.setDebugOutput(true);
-  Serial.println();
+void tryit(){
 
   camera_config_t config;
   config.ledc_channel = LEDC_CHANNEL_0;
@@ -127,14 +124,16 @@ void setup() {
   if(config.pixel_format == PIXFORMAT_JPEG){
     s->set_framesize(s, FRAMESIZE_QVGA);
   }
+}
 
-  // float isCameraInitialized = ov2640.initialize();
-  // if (!isCameraInitialized)
-  // {
-  //   while (1)
-  //   {
-  //   }
-  // }
+void setup() {
+  Serial.begin(115200);
+  Serial.setDebugOutput(true);
+  Serial.println();
+
+
+ ov2640.initialize();
+ 
 
 // Setup LED FLash if LED pin is defined in camera_pins.h
 #if defined(LED_GPIO_NUM)

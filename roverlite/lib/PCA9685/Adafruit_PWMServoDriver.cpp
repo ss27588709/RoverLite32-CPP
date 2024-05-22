@@ -17,9 +17,9 @@
 
 #include <Adafruit_PWMServoDriver.h>
 #include <Wire.h>
-#include <camera_pins.h>
+#include <PinDefines.h>
 //  #define WIRE Wire
-#define WIRE Wire1
+#define WIRE Wire
 
 
 
