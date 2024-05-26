@@ -25,5 +25,7 @@
 // 4 for flash led or 33 for normal led
 #define LED_GPIO_NUM       4
 
-#define I2C_SDA 14
-#define I2C_SCL 15
+#define I2C_SDA 21
+#define I2C_SCL 22
+#define RUN_PIN_1 16
+#define RUN_PIN_2 17

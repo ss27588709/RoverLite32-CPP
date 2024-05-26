@@ -1,5 +1,4 @@
 #include <Arduino.h>
-#include <PinDefines.h>
 #include <controller_index.h>
 #include <Wifi.h>
 #include <ESPAsyncWebServer.h>
@@ -11,9 +10,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include <Adafruit_PWMServoDriver.h>
-#define CAMERA_MODEL_AI_THINKER // Has PSRAM
-#include "esp_camera.h"
-#include "camera_pins.h"
+#include "PinDefines.h"
 
 void setupLedFlash(int pin);
 
@@ -21,9 +18,7 @@ const char *ssid = "TP-LINK_000000_2.4";
 const char *password = "19640215";
 
 AsyncWebServer server(80);
-AsyncWebSocket wsCameraStream("/stream");
 AsyncWebSocket wsRoverCmd("/cmd");
-TaskHandle_t StreamTaskHandle;
 uint32_t streamClientId = 0;
 uint8_t lampState = 0;
 uint8_t lastPercentage = 100;
@@ -47,12 +42,9 @@ void handleRoot(AsyncWebServerRequest *request);
 void handleNotFound(AsyncWebServerRequest *request);
 void notifyClients();
 void onRoverCmdWebSocketEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len);
-void onStreamWebSocketEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len);
 void batteryMonitorLoop();
 void sendCameraImage();
 void streamTask(void *parameter);
-void startCameraServer();
-
 
 
 void setup()
@@ -71,8 +63,8 @@ void setup()
     pinMode(BJT_LAMP, OUTPUT);
     digitalWrite(BJT_LAMP, LOW);
 
-    pinMode(12, OUTPUT);
-    pinMode(13, OUTPUT);
+    pinMode(RUN_PIN_1, OUTPUT);
+    pinMode(RUN_PIN_2, OUTPUT);
     pwm.begin();
     pwm.setPWMFreq(50); // Analog servos run at ~60 Hz updates
 
@@ -87,7 +79,7 @@ void setup()
     motorFL->initialize(pwm, 0, 2, 1);
     motorFR->initialize(pwm, 5, 3, 4); // 78冲突
     motorBL->initialize(pwm, 6, 8, 7);
-    motorBR->initialize(pwm, 11, 13, 12); // should be 11, gpio 25, 24, however 24 -> esp32 16, 25->17,
+    motorBR->initialize(pwm, 11, RUN_PIN_2, RUN_PIN_1); // should be 11, gpio 25, 24, however 24 -> esp32 16, 25->17,
     roverLite.attachMotor(motorFL, motorFR, motorBL, motorBR);
     roverLite.standBy();
     // camera_init();
@@ -96,8 +88,7 @@ void setup()
     // WiFi.softAP(ssid, password);
 
     // ov2640.startCameraServer();
-    Serial.print("Camera Ready! AP IP address: ");
-    Serial.println(WiFi.localIP());
+    
 
     server.on("/", HTTP_GET, handleRoot);
     server.onNotFound(handleNotFound);
@@ -107,60 +98,25 @@ void setup()
 
     wsRoverCmd.onEvent(onRoverCmdWebSocketEvent);
     server.addHandler(&wsRoverCmd);
-
     server.begin();
     Serial.println("HTTP server started");
 
-    xTaskCreatePinnedToCore(streamTask, "streamTask", 10000, NULL, 1, &StreamTaskHandle, 1);
-    Serial.println("Streaming task begin!");
+    // xTaskCreatePinnedToCore(streamTask, "streamTask", 10000, NULL, 1, &StreamTaskHandle, 1);
+    // Serial.println("Streaming task begin!");
 }
 
 void loop()
 {
     // wsCameraStream.cleanupClients();
-    wsRoverCmd.cleanupClients();
-    sendCameraImage();
+    // wsRoverCmd.cleanupClients();
+    // sendCameraImage();
 }
-
-void sendCameraImage()
-{
-    // if (streamClientId == 0)
-    // {
-    //     return;
-    // }
-
-    // camera_fb_t *fb = esp_camera_fb_get(); // ov2640.camera_fb_get();
-    // if (!fb)
-    // {
-    //     Serial.println("Frame buffer could not be acqured");
-    //     return;
-    // }
-    // else
-    // {
-    // } // Serial.println("Frame buffer is acqured");}
-
-    // wsCameraStream.binary(streamClientId, fb->buf, fb->len);
-    // esp_camera_fb_return(fb); // ov2640.camera_fb_return(fb);
-    // Serial.println("Frame empty!");
-
-    // while (true)
-    // {
-    //     AsyncWebSocketClient *cp = wsCameraStream.client(streamClientId);
-    //     if (!cp || !(cp->queueIsFull()))
-    //     {
-    //         break;
-    //     }
-    //     // delay(1);
-    // }
-}
-
 void handleRoot(AsyncWebServerRequest *request)
 {
-    // request->send_P(200, "text/html", (const char*)controller_index_html_gz);
-    // Serial.println("handle root!");
-    AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", controller_index_html_gz, controller_index_html_gz_len);
-    response->addHeader("Content-Encoding", "gzip");
-    request->send(response);
+//       AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", controller_index_html_gz, controller_index_html_gz_len);
+//   response->addHeader("Content-Encoding", "gzip");
+//   request->send(response);
+  request->send_P(200, "text/html", indexHtml); // 响应请求
 }
 
 void handleNotFound(AsyncWebServerRequest *request)
@@ -173,7 +129,6 @@ void notifyClients()
     const uint8_t size = JSON_OBJECT_SIZE(1);
     StaticJsonDocument<size> json;
     json["percentage"] = batPercentage;
-
     char buffer[17];
     size_t len = serializeJson(json, buffer);
     wsRoverCmd.textAll(buffer, len);
@@ -261,43 +216,6 @@ void onRoverCmdWebSocketEvent(AsyncWebSocket *server,
     }
 }
 
-void onStreamWebSocketEvent(AsyncWebSocket *server,
-                            AsyncWebSocketClient *client,
-                            AwsEventType type,
-                            void *arg,
-                            uint8_t *data,
-                            size_t len)
-{
-    switch (type)
-    {
-    case WS_EVT_CONNECT:
-        Serial.printf("WebSocket client #%u connected from %s\n", client->id(), client->remoteIP().toString().c_str());
-        streamClientId = client->id();
-        break;
-    case WS_EVT_DISCONNECT:
-        Serial.printf("WebSocket client #%u disconnected\n", client->id());
-        streamClientId = 0;
-        break;
-    case WS_EVT_DATA:
-        break;
-    case WS_EVT_PONG:
-        break;
-    case WS_EVT_ERROR:
-        break;
-    default:
-        break;
-    }
-}
-
-void streamTask(void *parameter)
-{
-    while (true)
-    {
-        // sendCameraImage();
-        vTaskDelay(xDelay1ms);
-    }
-    vTaskDelete(StreamTaskHandle);
-}
 
 void batteryMonitorLoop()
 {

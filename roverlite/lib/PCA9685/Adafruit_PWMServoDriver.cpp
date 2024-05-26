@@ -19,7 +19,7 @@
 #include <Wire.h>
 #include <PinDefines.h>
 //  #define WIRE Wire
-#define WIRE Wire
+#define WIRE Wire1
 
 
 

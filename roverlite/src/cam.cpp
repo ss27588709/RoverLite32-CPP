@@ -1,12 +1,9 @@
 #include <Arduino.h>
-#include <PinDefines.h>
 #include <controller_index.h>
 #include <Wifi.h>
 #include <ESPAsyncWebServer.h>
 #include <motor.h>
 #include <MecanumWheelRobot.h>
-#include <iostream>
-#include <sstream>
 #include <ArduinoJson.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -29,7 +26,7 @@ uint32_t streamClientId = 0;
 uint8_t lampState = 0;
 uint8_t lastPercentage = 100;
 uint8_t batPercentage = 100;
-const TickType_t xDelay1ms = pdMS_TO_TICKS(10);
+const TickType_t xDelay1ms = pdMS_TO_TICKS(1);
 
 // // OV2640 Camera
 Camera ov2640;
@@ -53,7 +50,15 @@ void batteryMonitorLoop();
 void sendCameraImage();
 void streamTask(void *parameter);
 void startCameraServer();
-
+void esp_print_tasks(void)
+{
+  char *pbuffer = (char *)calloc(1, 2048);
+  printf("--------------- heap:%u ---------------------\r\n", esp_get_free_heap_size());
+  vTaskList(pbuffer);
+  printf("%s", pbuffer);
+  printf("----------------------------------------------\r\n");
+  free(pbuffer);
+}
 void setup()
 {
   Serial.begin(115200);
@@ -67,13 +72,15 @@ void setup()
     Serial.println("Connecting to WiFi...");
   }
 
-  ov2640.initialize();
+  // ov2640.initialize();
 
-  pinMode(BJT_LAMP, OUTPUT);
-  digitalWrite(BJT_LAMP, LOW);
+  // pinMode(BJT_LAMP, OUTPUT);
+  // digitalWrite(BJT_LAMP, LOW);
 
   pinMode(12, OUTPUT);
   pinMode(13, OUTPUT);
+  pinMode(14,OUTPUT);
+  pinMode(15,OUTPUT);
   pwm.begin();
   pwm.setPWMFreq(50); // Analog servos run at ~60 Hz updates
 
@@ -109,8 +116,24 @@ void setup()
   server.begin();
   Serial.println("HTTP server started");
 
-  xTaskCreatePinnedToCore(streamTask, "streamTask", 10000, NULL, 1, &StreamTaskHandle, 1);
+  // xTaskCreate(streamTask, "streamTask", 4096, NULL, 1, &StreamTaskHandle);
   Serial.println("Streaming task begin!");
+
+  static char InfoBuffer[512] = {0};
+  while (1)
+  {
+    // 获取可用堆内存大小
+    int freeHeap = ESP.getFreeHeap();
+    int fullHeap = ESP.getHeapSize();
+
+    // 通过串行通讯输出可用堆内存大小
+    Serial.printf("%d:%d\n",freeHeap,fullHeap);
+    delay(1000);
+    // vTaskList((char *)&InfoBuffer);
+    // printf("任务名      任务状态 优先级   剩余栈 任务序号\r\n");
+    // printf("\r\n%s\r\n", InfoBuffer);
+    // vTaskDelay(2000 / portTICK_PERIOD_MS);
+  }
 }
 
 void loop()
@@ -149,6 +172,7 @@ void sendCameraImage()
     }
     // delay(1);
   }
+  // delay(1);
 }
 
 void handleRoot(AsyncWebServerRequest *request)
@@ -158,8 +182,7 @@ void handleRoot(AsyncWebServerRequest *request)
   // AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", controller_index_html_gz, controller_index_html_gz_len);
   // response->addHeader("Content-Encoding", "gzip");
   // request->send(response);
-  request->send_P(200,"text/html",indexHtml);   //响应请求
-
+  request->send_P(200, "text/html", indexHtml); // 响应请求
 }
 
 void handleNotFound(AsyncWebServerRequest *request)
